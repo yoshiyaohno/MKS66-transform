@@ -4,7 +4,7 @@ import           Control.Applicative
 import qualified Data.List       as L
 import qualified Data.Map.Strict as M
 
-data Line = Line (Vect Int) (Vect Int) deriving (Show)
+data Line a = Line (Vect a) (Vect a) deriving (Show)
 data Vect a = Vect { getX::a
                    , getY::a
                    , getZ::a
@@ -13,7 +13,6 @@ data Vect a = Vect { getX::a
 data Color  = Color {r::Int, g::Int, b::Int}
 
 type Screen = M.Map (Int, Int) Color
-type DrawAction = Screen -> Screen
 
 blk = Color 0 0 0
 red = Color 255 0 0
@@ -28,12 +27,14 @@ instance (Show t) => Show (Vect t) where
                             ++ show q
                             ++ ")"
 
--- the duality of man
 instance Show Color where
     show = unwords . map show . ([r, g, b] <*>) . pure
 
+instance Functor Line where
+    fmap f (Line p0 p1) = Line (fmap f p0) (fmap f p1)
+
 instance Functor Vect where
-    fmap f (Vect x y z q) = (Vect (f x) (f y) (f z) (f q))
+    fmap f (Vect x y z q) = Vect (f x) (f y) (f z) (f q)
     
 instance Applicative Vect where
     pure x = (Vect x x x x)
@@ -50,13 +51,13 @@ instance Foldable Vect where
 --        drawing = (drawEdges red edges) $ mempty
 --    writeFile "out.ppm" (printPixels (900, 900) drawing)
 
-drawLine :: Color -> Line -> Screen -> Screen
-drawLine c ln = mconcat (map (plotPt c) (rasterLine ln))
+drawLine :: Color -> Line Int -> Screen -> Screen
+drawLine c ln = mconcat $ map (plotPt c) (rasterLine ln)
 
 plotPt :: Color -> Vect Int -> Screen -> Screen
-plotPt c (Vect x y z _) = M.insert (x, y) c
+plotPt c (Vect x y _ _) = M.insert (x, y) c
 
-addLine :: Line -> [Vect Int] -> [Vect Int]
+addLine :: Line a -> [Vect a] -> [Vect a]
 addLine (Line p0 p1) = ([p0, p1] ++)
 
 -- takes bounds and a screen and puts in ppm format
@@ -87,7 +88,7 @@ rotate _ [] = []
 rotate n xs = zipWith const (drop n (cycle xs)) xs
 
 -- just gives you the points a line covers, no color
-rasterLine :: Line -> [Vect Int]
+rasterLine :: (Integral a) => Line a -> [Vect a]
 rasterLine (Line p0 p1)
     | dy == 0 && dx == 0        = []
     | abs dx > abs dy && dx > 0 = _rLx (Line p0 p1)
@@ -99,14 +100,14 @@ rasterLine (Line p0 p1)
 
 -- hell yeah ugly helper functions
 --  (I could use only one by flipping the tuples somehow but ergh)
-_rLx :: Line -> [Vect Int]
+_rLx :: (Integral a) => Line a -> [Vect a]
 _rLx (Line (Vect x0 y0 _ _) (Vect x1 y1 _ _)) =
     L.zipWith4 (Vect) [x0..x1] ys (repeat 0) (repeat 1)
     where   ys = map ((+y0) . (`quot` (2* abs dx))) . tail $ [negate dy, dy..]
             dy = y1 - y0
             dx = x1 - x0
 
-_rLy :: Line -> [Vect Int]
+_rLy :: (Integral a) => Line a -> [Vect a]
 _rLy (Line (Vect x0 y0 _ _) (Vect x1 y1 _ _)) =
     L.zipWith4 (Vect) xs [y0..y1] (repeat 0) (repeat 1)
     where   xs = map ((+x0) . (`quot` (2* abs dy))) . tail $ [negate dx, dx..]
