@@ -60,6 +60,9 @@ plotPt c (Vect x y _ _) = M.insert (x, y) c
 addLine :: Line a -> [Vect a] -> [Vect a]
 addLine (Line p0 p1) = ([p0, p1] ++)
 
+toList :: Vect a -> [a]
+toList = foldr (:) []
+
 -- takes bounds and a screen and puts in ppm format
 printPixels :: (Int, Int) -> Screen -> String
 printPixels (w, h) pxs =

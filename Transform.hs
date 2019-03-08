@@ -6,38 +6,80 @@ import qualified Data.Set        as S
 import qualified Data.List       as L
 import qualified Data.Map.Strict as M
 
-type Transform a = Vect (Vect a)
+newtype Transform a = Transform { getVV :: Vect (Vect a) }
+
+instance (Show a) => Show (Transform a) where
+    show = unlines . map (unwords . map show . toList) . toList . getVV
+
+instance (Num t) => Semigroup (Transform t) where
+    (<>) = comp
+
+instance (Num t) => Monoid (Transform t) where
+    mempty  = ident
+
+rotX :: (Floating a) => a -> Transform a
+rotX t = Transform $
+    Vect (Vect 1 0 0 0)
+         (Vect 0 (cos th) (-sin th) 0)
+         (Vect 0 (sin th) ( cos th) 0)
+         (Vect 0 0 0 1)
+    where th = t * (pi/180)
+
+rotY :: (Floating a) => a -> Transform a
+rotY t = Transform $
+    Vect (Vect ( cos th) 0 (sin th) 0)
+         (Vect 0 1 0 0)
+         (Vect (-sin th) 0 (cos th) 0)
+         (Vect 0 0 0 1)
+    where th = t * (pi/180)
+
+rotZ :: (Floating a) => a -> Transform a
+rotZ t = Transform $
+    Vect (Vect (cos th) (-sin th) 0 0)
+         (Vect (sin th) ( cos th) 0 0)
+         (Vect 0 0 1 0)
+         (Vect 0 0 0 1)
+    where th = t * (pi/180)
 
 ident :: (Num a) => Transform a
-ident =
+ident = Transform $
     Vect (Vect 1 0 0 0)
          (Vect 0 1 0 0)
          (Vect 0 0 1 0)
          (Vect 0 0 0 1)
 
 scale :: (Num a) => a -> a -> a -> Transform a
-scale x y z =
+scale x y z = Transform $
     Vect (Vect x 0 0 0)
          (Vect 0 y 0 0)
          (Vect 0 0 z 0)
          (Vect 0 0 0 1)
 
 trans :: (Num a) => a -> a -> a -> Transform a
-trans x y z =
+trans x y z = Transform $
     Vect (Vect 1 0 0 x)
          (Vect 0 1 0 y)
          (Vect 0 0 1 z)
          (Vect 0 0 0 1)
 
+-- I give up
+transpose :: Transform a -> Transform a
+transpose (Transform (Vect (Vect a b c d) (Vect e f g h) (Vect i j k l) (Vect m n o p))) =
+            Transform $ Vect (Vect a e i m) (Vect b f j n) (Vect c g k o) (Vect d h l p)
+
 drawEdges :: (RealFrac a) => Color -> [Vect a] -> Screen -> Screen
 drawEdges c edges = mconcat . map (drawLine c . uncurry Line) $ (pairOff redges)
     where redges = map (fmap round) edges
+
+comp :: (Num a) => Transform a -> Transform a -> Transform a
+comp t = Transform . mmult (transpose t) . getVV
 
 mmult :: (Num a, Functor f) => Transform a -> f (Vect a) -> f (Vect a)
 mmult t = fmap (pmult t)
 
 pmult :: (Num a) => Transform a -> Vect a -> Vect a
-pmult t = liftA2 dot t . pure
+pmult t = liftA2 dot tt . pure
+    where tt = getVV t
 
 dot :: (Num a) => Vect a -> Vect a -> a
 dot p = sum . liftA2 (*) p
