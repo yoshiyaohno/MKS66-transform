@@ -1,7 +1,6 @@
 import Line
 import Transform
 
-main :: IO ()
 main = do
     let cubepts = [Vect x y z 1 | x <- [100, 400],
                                   y <- [100, 400],

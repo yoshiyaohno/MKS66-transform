@@ -10,7 +10,7 @@ data Vect a = Vect { getX::a
                    , getZ::a
                    , getQ::a
                    } deriving (Eq, Ord)
-data Color  = Color {r::Int, g::Int, b::Int}
+data Color  = Color {getR::Int, getG::Int, getB::Int}
 
 type Screen = M.Map (Int, Int) Color
 
@@ -28,7 +28,7 @@ instance (Show t) => Show (Vect t) where
                             ++ ")"
 
 instance Show Color where
-    show = unwords . map show . ([r, g, b] <*>) . pure
+    show = unwords . map show . ([getR, getG, getB] <*>) . pure
 
 instance Functor Line where
     fmap f (Line p0 p1) = Line (fmap f p0) (fmap f p1)
