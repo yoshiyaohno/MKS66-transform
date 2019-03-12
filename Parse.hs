@@ -17,37 +17,43 @@ main = do
     scriptLines <- hGetContents script
     hClose script
 
-display :: State DrawMats DrawAction 
+display :: State DrawMats (Maybe DrawAction)
 display = do
     (_, edges) <- get
-    return (T.drawEdges red edges . (\_ -> M.empty))
+    return (Just (T.drawEdges red edges . (\_ -> M.empty)))
 
-ident :: State DrawMats ()
-ident = do
-    (_, edges) <- get
-    put (T.ident, edges)
-
-apply :: State DrawMats ()
-apply = do
-    (tform, edges) <- get
-    put (tform, T.mmult tform edges)
-
-line :: Line Double -> State DrawMats ()
+line :: Line Double -> State DrawMats (Maybe DrawAction)
 line ln = do
     (tform, edges) <- get
     put (tform, addLine ln edges)
+    return Nothing
 
-scale :: Double -> Double -> Double -> State DrawMats ()
+ident :: State DrawMats (Maybe DrawAction)
+ident = do
+    (_, edges) <- get
+    put (T.ident, edges)
+    return Nothing
+
+scale :: Double -> Double -> Double -> State DrawMats (Maybe DrawAction)
 scale x y z = do
     (tform, edges) <- get
     put (T.scale x y z <> tform, edges)
+    return Nothing
 
-move :: Double -> Double -> Double ->  State DrawMats ()
+move :: Double -> Double -> Double ->  State DrawMats (Maybe DrawAction)
 move x y z = do
     (tform, edges) <- get
     put (T.trans x y z <> tform, edges)
+    return Nothing
 
-clear :: State DrawMats ()
+clear :: State DrawMats (Maybe DrawAction)
 clear = do
     (tform, _) <- get
     put (tform, [])
+    return Nothing
+
+apply :: State DrawMats (Maybe DrawAction)
+apply = do
+    (tform, edges) <- get
+    put (tform, T.mmult tform edges)
+    return Nothing
