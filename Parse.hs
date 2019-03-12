@@ -26,21 +26,28 @@ ident :: State DrawMats ()
 ident = do
     (_, edges) <- get
     put (T.ident, edges)
-    --return ()
 
 apply :: State DrawMats ()
 apply = do
     (tform, edges) <- get
     put (tform, T.mmult tform edges)
-    --return ()
 
 line :: Line Double -> State DrawMats ()
 line ln = do
     (tform, edges) <- get
     put (tform, addLine ln edges)
-    --return ()
 
 scale :: Double -> Double -> Double -> State DrawMats ()
 scale x y z = do
     (tform, edges) <- get
-    put ((T.scale x y z) <> tform, edges)
+    put (T.scale x y z <> tform, edges)
+
+move :: Double -> Double -> Double ->  State DrawMats ()
+move x y z = do
+    (tform, edges) <- get
+    put (T.trans x y z <> tform, edges)
+
+clear :: State DrawMats ()
+clear = do
+    (tform, _) <- get
+    put (tform, [])
