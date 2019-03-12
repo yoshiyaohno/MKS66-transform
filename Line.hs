@@ -13,6 +13,7 @@ data Vect a = Vect { getX::a
 data Color  = Color {getR::Int, getG::Int, getB::Int}
 
 type Screen = M.Map (Int, Int) Color
+type DrawAction = Screen -> Screen
 
 blk = Color 0 0 0
 red = Color 255 0 0
