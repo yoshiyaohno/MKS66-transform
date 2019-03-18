@@ -94,7 +94,7 @@ rotate n xs = zipWith const (drop n (cycle xs)) xs
 -- just gives you the points a line covers, no color
 rasterLine :: (Integral a) => Line a -> [Vect a]
 rasterLine (Line p0 p1)
-    | dy == 0 && dx == 0        = []
+    | dy == 0 && dx == 0        = [p0]
     | abs dx > abs dy && dx > 0 = _rLx (Line p0 p1)
     | abs dx > abs dy           = _rLx (Line p1 p0)
     | dy > 0                    = _rLy (Line p0 p1)
