@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 import Line
 import qualified Transform as T
 import System.IO
@@ -6,54 +7,50 @@ import Control.Monad.State
 
 import qualified Data.Map.Strict as M
 
-type DrawMats = (T.Transform Double, [Vect Double])
+type DrawMats = (Screen, T.Transform Double, [Vect Double])
 
 noArgs  = ["ident", "apply", "display", "save"]
 
 main = do
     args <- getArgs
-    script <- openFile (head args) ReadMode
+    script <- readFile (head args)
     putStrLn "oof"
-    scriptLines <- hGetContents script
-    hClose script
 
-display :: State DrawMats (Maybe DrawAction)
-display = do
-    (_, edges) <- get
-    return (Just (T.drawEdges red edges . (\_ -> M.empty)))
+parse :: (MonadState DrawMats m, MonadIO m) => [String] -> [m ()]
+parse (a:b:xs)
+    | a `elem` noArgs = 
 
-line :: Line Double -> State DrawMats (Maybe DrawAction)
-line ln = do
-    (tform, edges) <- get
-    put (tform, addLine ln edges)
-    return Nothing
+save :: (MonadState DrawMats m, MonadIO m) => String -> m ()
+save path = do
+    (scrn, _, _) <- get
+    display red
+    liftIO $ writeFile path (printPixels (500, 500) scrn)
 
-ident :: State DrawMats (Maybe DrawAction)
-ident = do
-    (_, edges) <- get
-    put (T.ident, edges)
-    return Nothing
+display :: (MonadState DrawMats m) => Color -> m ()
+display color = modify $
+    \(scrn, tform, edges) ->
+        (T.drawEdges color edges M.empty, tform, edges)
 
-scale :: Double -> Double -> Double -> State DrawMats (Maybe DrawAction)
-scale x y z = do
-    (tform, edges) <- get
-    put (T.scale x y z <> tform, edges)
-    return Nothing
+line :: (MonadState DrawMats m) => Line Double -> m ()
+line ln = modify $
+    \(s, t, edges) -> (s, t, addLine ln edges)
 
-move :: Double -> Double -> Double ->  State DrawMats (Maybe DrawAction)
-move x y z = do
-    (tform, edges) <- get
-    put (T.trans x y z <> tform, edges)
-    return Nothing
+ident :: (MonadState DrawMats m) => m ()
+ident = modify $
+    \(s, _, es) -> (s, T.ident, es)
 
-clear :: State DrawMats (Maybe DrawAction)
-clear = do
-    (tform, _) <- get
-    put (tform, [])
-    return Nothing
+scale :: (MonadState DrawMats m) => Double -> Double -> Double -> m ()
+scale x y z = modify $
+    \(scrn, tform, edges) -> (scrn, T.scale x y z <> tform, edges)
 
-apply :: State DrawMats (Maybe DrawAction)
-apply = do
-    (tform, edges) <- get
-    put (tform, T.mmult tform edges)
-    return Nothing
+move :: (MonadState DrawMats m) => Double -> Double -> Double -> m ()
+move x y z = modify $
+    \(scrn, tform, edges) -> (scrn, T.trans x y z <> tform, edges)
+
+clear :: (MonadState DrawMats m) => m ()
+clear = modify $
+    \(scrn, tform, _) -> (scrn, tform, [])
+
+apply :: (MonadState DrawMats m) => m ()
+apply = modify $
+    \(scrn, tform, edges) -> (scrn, tform, T.mmult tform edges)
