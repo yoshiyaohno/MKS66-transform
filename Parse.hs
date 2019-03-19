@@ -1,10 +1,12 @@
 {-# LANGUAGE FlexibleContexts #-}
 import Line
 import qualified Transform as T
+
+import System.Directory
 import System.IO
 import System.Environment
 import Control.Monad.State
-
+import System.Process
 import qualified Data.Map.Strict as M
 
 type DrawMats = (Screen, T.Transform Double, [Vect Double])
@@ -47,14 +49,20 @@ parse (a:b:xs) =
 save :: (MonadState DrawMats m, MonadIO m) => [String] -> m ()
 save args = do
     let path = head args
+    modify $ \(s, t, e) -> (T.drawEdges red e M.empty, t, e)
     (scrn, _, _) <- get
-    display
     liftIO $ writeFile path (printPixels (500, 500) scrn)
 
-display :: (MonadState DrawMats m) => m ()
-display = modify $
-    \(scrn, tform, edges) ->
-        (T.drawEdges red edges M.empty, tform, edges)
+display :: (MonadState DrawMats m, MonadIO m) => m ()
+display = do
+    modify $ \(s, t, e) -> (T.drawEdges red e M.empty, t, e)
+    (scrn, _, _) <- get
+    liftIO $ do
+        (tempName, tempHandle) <- openTempFile "." "disp.ppm"
+        hPutStr tempHandle (printPixels (500, 500) scrn)
+        callProcess "display" [tempName]
+        hClose tempHandle 
+        removeFile tempName
 
 line :: (MonadState DrawMats m) => [String] -> m ()
 line args = do
