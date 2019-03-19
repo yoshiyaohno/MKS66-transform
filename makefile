@@ -4,5 +4,8 @@ main: Parse.hs Transform.hs Line.hs
 clean:
 	rm *.hi *.o Parse *.ppm *.png
 
+imgclean:
+	rm *.ppm *.png
+
 run:
 	./Parse "script"

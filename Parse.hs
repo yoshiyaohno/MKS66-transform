@@ -59,8 +59,8 @@ display = do
     (scrn, _, _) <- get
     liftIO $ do
         (tempName, tempHandle) <- openTempFile "." "disp.ppm"
-        hPutStr tempHandle (printPixels (500, 500) scrn)
-        callProcess "display" [tempName]
+        hPutStrLn tempHandle (printPixels (500, 500) scrn)
+        callProcess "eog" [tempName]
         hClose tempHandle 
         removeFile tempName
 
