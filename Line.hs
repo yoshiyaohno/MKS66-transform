@@ -89,7 +89,7 @@ pairOff (a:b:xs) = ((a,b) : pairOff xs)
 
 rotate :: Int -> [a] -> [a]
 rotate _ [] = []
-rotate n xs = zipWith const (drop n (cycle xs)) xs
+rotate n xs = zipWith const (drop n $ cycle xs) xs
 
 -- just gives you the points a line covers, no color
 rasterLine :: (Integral a) => Line a -> [Vect a]
