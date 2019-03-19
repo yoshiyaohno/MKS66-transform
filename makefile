@@ -1,8 +1,8 @@
-main: Main.hs Transform.hs Line.hs
-	ghc -dynamic -O2 Main.hs
+main: Parse.hs Transform.hs Line.hs
+	ghc -dynamic -O2 Parse.hs
 
 clean:
-	rm *.hi *.o Main out.ppm
+	rm *.hi *.o Parse out.ppm
 
-run: Main
-	./Main
+run: Parse
+	./Parse "script"
