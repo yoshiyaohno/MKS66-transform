@@ -21,13 +21,14 @@ wArgs = [ ("save", save)
         , ("line", line)
         , ("scale", scale)
         , ("move", move)
+        , ("rotate", rote)
         ]
 
 main = do
     args <- getArgs
     script <- readFile (head args)
     let cmds = parse $ lines script :: [StateT DrawMats IO ()]
-    runState (sequence_ cmds) (M.empty, T.ident, [])
+    runStateT (sequence_ cmds) (M.empty, T.ident, [])
 
 parse :: (MonadState DrawMats m, MonadIO m) => [String] -> [m ()]
 parse []  = []
@@ -69,6 +70,16 @@ scale :: (MonadState DrawMats m) => [String] -> m ()
 scale args = modify $
     \(scrn, tform, edges) -> (scrn, T.scale x y z <> tform, edges)
     where [x, y, z] = map read args
+
+rote :: (MonadState DrawMats m) => [String] -> m ()
+rote s = modify $
+    \(scrn, tform, edges) -> (scrn, roti s <> tform, edges)
+    where roti args
+            | axis == "x"   = T.rotX theta
+            | axis == "y"   = T.rotY theta
+            | axis == "z"   = T.rotZ theta
+            where axis  = args !! 0
+                  theta = read $ args !! 1
 
 move :: (MonadState DrawMats m) => [String] -> m ()
 move args = modify $
