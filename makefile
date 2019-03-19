@@ -4,5 +4,5 @@ main: Parse.hs Transform.hs Line.hs
 clean:
 	rm *.hi *.o Parse out.ppm
 
-run: Parse
+run:
 	./Parse "script"
