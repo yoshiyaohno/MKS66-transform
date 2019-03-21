@@ -8,4 +8,4 @@ imgclean:
 	rm *.ppm *.png
 
 run:
-	./Parse "script"
+	./Parse script
