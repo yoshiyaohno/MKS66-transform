@@ -8,8 +8,10 @@ import System.Environment
 import Control.Monad.State
 import System.Process
 import qualified Data.Map.Strict as M
+import qualified Data.List as L
 
 type DrawMats = (Screen, T.Transform Double, [Vect Double])
+type Args = [String]
 
 noArgs :: (MonadState DrawMats m, MonadIO m) => [(String, m ())]
 noArgs = [ ("ident", ident)
@@ -18,7 +20,7 @@ noArgs = [ ("ident", ident)
          , ("clear", clear)
          ]
 
-wArgs :: (MonadState DrawMats m, MonadIO m) => [(String, [String] -> m ())]
+wArgs :: (MonadState DrawMats m, MonadIO m) => [(String, Args -> m ())]
 wArgs = [ ("save", save)
         , ("line", line)
         , ("scale", scale)
@@ -32,7 +34,7 @@ main = do
     let cmds = parse $ lines script :: [StateT DrawMats IO ()]
     runStateT (sequence_ cmds) (M.empty, T.ident, [])
 
-parse :: (MonadState DrawMats m, MonadIO m) => [String] -> [m ()]
+parse :: (MonadState DrawMats m, MonadIO m) => Args -> [m ()]
 parse []  = []
 parse [a] =
     case lookup a noArgs of
@@ -46,7 +48,14 @@ parse (a:b:xs) =
                 Just c1 -> (c1 $ words b) : (parse xs)
                 Nothing -> parse xs
 
-save :: (MonadState DrawMats m, MonadIO m) => [String] -> m ()
+hermite :: (MonadState DrawMats m) => Args -> m ()
+hermite args = do
+    let (fX, fY) = T.genHermFxns args
+        pts = L.zipWith4 Vect (T.sampleParam 128 fX) (T.sampleParam 128 fY)
+                       (repeat 0) (repeat 1)
+    modify $ \(s, t, e) -> (s, t, (connectPts pts) ++ e) 
+
+save :: (MonadState DrawMats m, MonadIO m) => Args -> m ()
 save args = do
     let path = head args
     modify $ \(s, t, e) -> (T.drawEdges red e M.empty, t, e)
@@ -64,7 +73,7 @@ display = do
         hClose tempHandle 
         removeFile tempName
 
-line :: (MonadState DrawMats m) => [String] -> m ()
+line :: (MonadState DrawMats m) => Args -> m ()
 line args = do
     let [x0, y0, z0, x1, y1, z1] = map read args
         ln = Line (Vect x0 y0 z0 1) (Vect x1 y1 z1 1)
@@ -74,12 +83,12 @@ ident :: (MonadState DrawMats m) => m ()
 ident = modify $
     \(s, _, es) -> (s, T.ident, es)
 
-scale :: (MonadState DrawMats m) => [String] -> m ()
+scale :: (MonadState DrawMats m) => Args -> m ()
 scale args = modify $
     \(scrn, tform, edges) -> (scrn, tform <> T.scale x y z, edges)
     where [x, y, z] = map read args
 
-rote :: (MonadState DrawMats m) => [String] -> m ()
+rote :: (MonadState DrawMats m) => Args -> m ()
 rote s = modify $
     \(scrn, tform, edges) -> (scrn, tform <> roti s, edges)
     where roti args
@@ -89,7 +98,7 @@ rote s = modify $
             where axis  = args !! 0
                   theta = read $ args !! 1
 
-move :: (MonadState DrawMats m) => [String] -> m ()
+move :: (MonadState DrawMats m) => Args -> m ()
 move args = modify $
     \(scrn, tform, edges) -> (scrn, tform <> T.trans x y z, edges)
     where [x, y, z] = map read args

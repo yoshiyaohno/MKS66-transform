@@ -62,10 +62,33 @@ trans x y z = Transform $
          (Vect 0 0 1 z)
          (Vect 0 0 0 1)
 
+hermite :: (Num a) => Transform a
+hermite = Transform $
+    Vect (Vect 2 (-1) 1 1)
+         (Vect (-3) 3 (-2) (-1))
+         (Vect 0 0 1 0)
+         (Vect 1 0 0 0)
+
+sampleParam :: (Enum a, Fractional a) => a -> (a -> a) -> [a]
+sampleParam tMax f = map f [0, (1 / tMax) .. 1]
+
+genHermFxns :: (Fractional a, Read a) =>
+    [String] -> ((a -> a), (a -> a))
+genHermFxns args =
+    let [x0, y0, x1, y1, dx0, dy0, dx1, dy1] = map read args
+        hermX = pmult hermite (Vect x0 x1 dx0 dx1)
+        hermY = pmult hermite (Vect y0 y1 dy0 dy1)
+            in ((dot hermX . cubify), (dot hermY . cubify))
+
+cubify :: (Num a) => a -> Vect a
+cubify x = Vect (x*x*x) (x*x) x 1
+
 -- I give up
 transpose :: Transform a -> Transform a
-transpose (Transform (Vect (Vect a b c d) (Vect e f g h) (Vect i j k l) (Vect m n o p))) =
-            Transform $ Vect (Vect a e i m) (Vect b f j n) (Vect c g k o) (Vect d h l p)
+transpose (Transform (Vect (Vect a b c d) (Vect e f g h)
+    (Vect i j k l) (Vect m n o p))) =
+            Transform $ Vect (Vect a e i m) (Vect b f j n)
+                (Vect c g k o) (Vect d h l p)
 
 drawEdges :: (RealFrac a) => Color -> [Vect a] -> Screen -> Screen
 drawEdges c edges = mconcat . map (drawLine c . uncurry Line) $ (pairOff redges)

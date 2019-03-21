@@ -46,12 +46,6 @@ instance Foldable Vect where
     foldr f acc (Vect x0 x1 x2 x3) =
         foldr f acc [x0, x1, x2, x3]
 
---main = do
---    let points  = polygon 31 255 (Vect 470 470 0 1)
---        edges   = concat [[x,y] | x <- points, y <- points]
---        drawing = (drawEdges red edges) $ mempty
---    writeFile "out.ppm" (printPixels (900, 900) drawing)
-
 drawLine :: Color -> Line Int -> Screen -> Screen
 drawLine c ln = mconcat $ map (plotPt c) (rasterLine ln)
 
@@ -61,6 +55,11 @@ plotPt c (Vect x y _ _) = M.insert (x, y) c
 addLine :: Line a -> [Vect a] -> [Vect a]
 addLine (Line p0 p1) = ([p0, p1] ++)
 
+connectPts :: [Vect a] -> [Vect a]
+connectPts [] = []
+connectPts [x] = [x]
+connectPts (a:b:xs) = a:b:(connectPts $ b:xs)
+
 toList :: Vect a -> [a]
 toList = foldr (:) []
 
@@ -69,7 +68,7 @@ printPixels :: (Int, Int) -> Screen -> String
 printPixels (w, h) pxs =
     ppmHeader (w, h)
     ++ (unlines . map unwords $ [[show . f $ M.lookup (x, y) pxs
-                | x <- [0..w-1]] | y <- [0..h-1]])
+                | x <- [0..w-1]] | y <- (reverse [0..h-1])])
     where   f Nothing  = Color 0 0 0
             f (Just c) = c 
  
