@@ -85,12 +85,12 @@ ident = modify $
 
 scale :: (MonadState DrawMats m) => Args -> m ()
 scale args = modify $
-    \(scrn, tform, edges) -> (scrn, tform <> T.scale x y z, edges)
+    \(scrn, tform, edges) -> (scrn, tform `mappend` T.scale x y z, edges)
     where [x, y, z] = map read args
 
 rote :: (MonadState DrawMats m) => Args -> m ()
 rote s = modify $
-    \(scrn, tform, edges) -> (scrn, tform <> roti s, edges)
+    \(scrn, tform, edges) -> (scrn, tform `mappend` roti s, edges)
     where roti args
             | axis == "x"   = T.rotX theta
             | axis == "y"   = T.rotY theta
@@ -100,7 +100,7 @@ rote s = modify $
 
 move :: (MonadState DrawMats m) => Args -> m ()
 move args = modify $
-    \(scrn, tform, edges) -> (scrn, tform <> T.trans x y z, edges)
+    \(scrn, tform, edges) -> (scrn, tform `mappend` T.trans x y z, edges)
     where [x, y, z] = map read args
 
 clear :: (MonadState DrawMats m) => m ()
